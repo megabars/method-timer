@@ -1,0 +1,17 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# IntelliJ
+.idea/
+*.iml
+.intellijPlatform/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
+.vscode/

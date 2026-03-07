@@ -1,0 +1,69 @@
+<idea-plugin>
+    <id>com.github.methodtimer</id>
+    <name>Method Timer</name>
+    <version>1.0.0</version>
+    <vendor email="your-email@example.com" url="https://github.com/your-username/method-timer">Ivan Mezencev</vendor>
+
+    <description><![CDATA[
+        <h2>Method Timer — Automatic Method Execution Time Profiling</h2>
+        <p>
+            Automatically measures Java method execution time and displays results as
+            Code Vision lenses above method declarations in the editor.
+        </p>
+
+        <h3>Features</h3>
+        <ul>
+            <li><b>Zero configuration</b> — no annotations or code changes required</li>
+            <li><b>User code only</b> — libraries and frameworks are never instrumented</li>
+            <li><b>Real-time updates</b> — timings refresh every 3 seconds while the app is running</li>
+            <li><b>Console and server apps</b> — works with short scripts and Spring Boot alike</li>
+            <li><b>Persistent data</b> — results are saved between IDE restarts</li>
+            <li><b>Clickable lenses</b> — click on timing to see method details</li>
+        </ul>
+
+        <h3>How it works</h3>
+        <p>
+            When you run a Java application from the IDE, the plugin automatically attaches a
+            Java Agent that instruments your methods with timing hooks. Results are displayed
+            as Code Vision lenses (like "N usages") above each method.
+        </p>
+
+        <h3>Limitations</h3>
+        <ul>
+            <li>Works with direct Java/JUnit runs only (not Gradle-delegated)</li>
+            <li>Java methods only (not Kotlin)</li>
+        </ul>
+    ]]></description>
+
+    <change-notes><![CDATA[
+        <h3>1.0.0</h3>
+        <ul>
+            <li>Initial release</li>
+            <li>Java Agent with ByteBuddy instrumentation</li>
+            <li>Code Vision integration for timing display</li>
+            <li>Real-time polling for long-running processes</li>
+            <li>Persistent timing storage across IDE sessions</li>
+        </ul>
+    ]]></change-notes>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <java.programPatcher
+            implementation="com.github.methodtimer.plugin.execution.TimingJavaProgramPatcher"/>
+
+        <codeInsight.codeVisionProvider
+            implementation="com.github.methodtimer.plugin.codevision.MethodTimingCodeVisionProvider"/>
+
+        <codeInsight.codeVisionProviderFactory
+            implementation="com.github.methodtimer.plugin.codevision.MethodTimingCodeVisionProviderFactory"/>
+    </extensions>
+
+    <applicationListeners>
+        <listener
+            class="com.github.methodtimer.plugin.execution.TimingProcessListener"
+            topic="com.intellij.execution.ExecutionListener"/>
+    </applicationListeners>
+</idea-plugin>
