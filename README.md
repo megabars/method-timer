@@ -105,3 +105,7 @@ ZIP-дистрибутив: `plugin/build/distributions/plugin-<version>.zip`
 - **Kotlin** 1.9.25 — код плагина
 - **Java** 8 — код агента (для максимальной совместимости)
 - **Gradle** 8.12 + Shadow Plugin — сборка
+
+---
+
+> 🤖 Создано при помощи [Claude Code](https://claude.ai/code) (Claude Opus 4.6, Anthropic)

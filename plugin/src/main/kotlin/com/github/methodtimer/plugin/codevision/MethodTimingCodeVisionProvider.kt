@@ -12,8 +12,9 @@ import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.util.PsiTreeUtil
 import java.awt.event.MouseEvent
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 class MethodTimingCodeVisionProvider : CodeVisionProvider<Unit> {
 
@@ -65,7 +66,7 @@ class MethodTimingCodeVisionProvider : CodeVisionProvider<Unit> {
     ) {
         val formattedTime = TimeFormatter.format(nanos)
         val dateStr = if (lastRunTimestamp > 0) {
-            SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date(lastRunTimestamp))
+            DATE_FORMATTER.format(Instant.ofEpochMilli(lastRunTimestamp).atZone(ZoneId.systemDefault()))
         } else {
             "unknown"
         }
@@ -83,5 +84,6 @@ class MethodTimingCodeVisionProvider : CodeVisionProvider<Unit> {
 
     companion object {
         const val ID = "method.timing"
+        private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     }
 }

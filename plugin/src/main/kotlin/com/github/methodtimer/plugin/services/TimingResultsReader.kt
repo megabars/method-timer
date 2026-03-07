@@ -17,15 +17,17 @@ object TimingResultsReader {
         val results = mutableMapOf<String, Long>()
 
         try {
-            Files.readAllLines(filePath).forEach { line ->
-                if (line.isBlank()) return@forEach
-                try {
-                    val json = JsonParser.parseString(line).asJsonObject
-                    val fqn = json.get("fqn").asString
-                    val timeNs = json.get("timeNs").asLong
-                    results[fqn] = timeNs
-                } catch (e: Exception) {
-                    LOG.warn("Failed to parse timing line: $line", e)
+            Files.newBufferedReader(filePath).use { reader ->
+                reader.forEachLine { line ->
+                    if (line.isBlank()) return@forEachLine
+                    try {
+                        val json = JsonParser.parseString(line).asJsonObject
+                        val fqn = json.get("fqn").asString
+                        val timeNs = json.get("timeNs").asLong
+                        results[fqn] = timeNs
+                    } catch (e: Exception) {
+                        LOG.warn("Failed to parse timing line: $line", e)
+                    }
                 }
             }
         } catch (e: Exception) {

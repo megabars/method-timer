@@ -3,6 +3,7 @@ package com.github.methodtimer.plugin.services
 import com.intellij.openapi.components.*
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
+import java.util.concurrent.ConcurrentHashMap
 
 @State(
     name = "MethodTimingStorage",
@@ -12,7 +13,7 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 class MethodTimingStorage : PersistentStateComponent<MethodTimingStorage.State> {
 
     class State {
-        var timings: MutableMap<String, Long> = mutableMapOf()
+        var timings: MutableMap<String, Long> = ConcurrentHashMap()
         var lastRunTimestamp: Long = 0L
     }
 

@@ -6,6 +6,8 @@ import com.github.methodtimer.plugin.services.TimingResultsReader
 import com.github.methodtimer.plugin.services.TimingRunTracker
 import com.intellij.codeInsight.codeVision.CodeVisionHost
 import com.intellij.execution.ExecutionListener
+import com.intellij.execution.process.ProcessAdapter
+import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.application.ApplicationManager
@@ -20,7 +22,6 @@ import java.util.concurrent.TimeUnit
 
 class TimingProcessListener : ExecutionListener {
 
-    private val LOG = Logger.getInstance(TimingProcessListener::class.java)
     private val scheduler = Executors.newSingleThreadScheduledExecutor { r ->
         Thread(r, "method-timer-poller").apply { isDaemon = true }
     }
@@ -42,16 +43,15 @@ class TimingProcessListener : ExecutionListener {
         }, 5, 3, TimeUnit.SECONDS)
 
         // Останавливаем polling когда процесс завершится
-        handler.addProcessListener(object : com.intellij.execution.process.ProcessAdapter() {
-            override fun processTerminated(event: com.intellij.execution.process.ProcessEvent) {
+        handler.addProcessListener(object : ProcessAdapter() {
+            override fun processTerminated(event: ProcessEvent) {
                 task.cancel(false)
                 LOG.info("[MethodTimer] Process terminated: $runProfileName")
-                // Финальное чтение с удалением файла
-                ApplicationManager.getApplication().executeOnPooledThread {
-                    Thread.sleep(1000)
+                // Финальное чтение с удалением файла через scheduler (без блокировки пула IDE)
+                scheduler.schedule({
                     readAndUpdateTimings(project, outputPath, deleteFile = true)
                     TimingRunTracker.getInstance(project).consumeOutputPath(runProfileName)
-                }
+                }, 1, TimeUnit.SECONDS)
             }
         })
     }
@@ -82,5 +82,9 @@ class TimingProcessListener : ExecutionListener {
                 )
             }
         }
+    }
+
+    companion object {
+        private val LOG = Logger.getInstance(TimingProcessListener::class.java)
     }
 }

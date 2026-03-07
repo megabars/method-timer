@@ -14,8 +14,6 @@ import java.io.File
 
 class TimingJavaProgramPatcher : JavaProgramPatcher() {
 
-    private val LOG = Logger.getInstance(TimingJavaProgramPatcher::class.java)
-
     override fun patchJavaParameters(executor: Executor, configuration: RunProfile, javaParameters: JavaParameters) {
         if (configuration !is ModuleBasedConfiguration<*, *>) return
         val agentJar = resolveAgentJar()
@@ -29,6 +27,10 @@ class TimingJavaProgramPatcher : JavaProgramPatcher() {
 
         TimingRunTracker.getInstance(configuration.project).registerRun(configuration.name, outputFile.absolutePath)
         LOG.info("[MethodTimer] Injected agent for '${configuration.name}', output: ${outputFile.absolutePath}")
+    }
+
+    companion object {
+        private val LOG = Logger.getInstance(TimingJavaProgramPatcher::class.java)
     }
 
     private fun resolveAgentJar(): File? {

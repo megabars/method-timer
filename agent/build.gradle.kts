@@ -22,8 +22,7 @@ tasks.shadowJar {
 
     manifest {
         attributes(
-            "Premain-Class" to "com.github.methodtimer.agent.TimingAgent",
-            "Can-Retransform-Classes" to "true"
+            "Premain-Class" to "com.github.methodtimer.agent.TimingAgent"
         )
     }
 }
