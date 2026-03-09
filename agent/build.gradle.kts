@@ -12,13 +12,11 @@ java {
 
 dependencies {
     implementation("net.bytebuddy:byte-buddy:$byteBuddyVersion")
-    implementation("com.google.code.gson:gson:2.11.0")
 }
 
 tasks.shadowJar {
     archiveClassifier.set("all")
     relocate("net.bytebuddy", "com.github.methodtimer.agent.shaded.bytebuddy")
-    relocate("com.google.gson", "com.github.methodtimer.agent.shaded.gson")
 
     manifest {
         attributes(

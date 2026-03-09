@@ -2,7 +2,6 @@ package com.github.methodtimer.plugin.services
 
 import com.intellij.openapi.components.*
 import com.intellij.openapi.project.Project
-import com.intellij.util.xmlb.XmlSerializerUtil
 import java.util.concurrent.ConcurrentHashMap
 
 @State(
@@ -22,9 +21,9 @@ class MethodTimingStorage : PersistentStateComponent<MethodTimingStorage.State> 
     override fun getState(): State = myState
 
     override fun loadState(state: State) {
-        XmlSerializerUtil.copyBean(state, myState)
         // XmlSerializer десериализует Map как LinkedHashMap — восстанавливаем потокобезопасность
-        myState.timings = ConcurrentHashMap(myState.timings)
+        state.timings = ConcurrentHashMap(state.timings)
+        myState = state
     }
 
     fun updateTimings(newTimings: Map<String, Long>) {

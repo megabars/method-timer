@@ -46,6 +46,11 @@ class TimingJavaProgramPatcher : JavaProgramPatcher() {
     private fun resolveAgentJar(): File? {
         val plugin = PluginManagerCore.getPlugin(PluginId.getId("com.github.methodtimer")) ?: return null
         val agentDir = plugin.pluginPath.resolve("agent")
-        return agentDir.toFile().listFiles()?.firstOrNull { it.name.endsWith("-all.jar") }
+        val dir = agentDir.toFile()
+        if (!dir.isDirectory) {
+            LOG.warn("[MethodTimer] Agent directory does not exist: $agentDir")
+            return null
+        }
+        return dir.listFiles()?.firstOrNull { it.name.endsWith("-all.jar") }
     }
 }

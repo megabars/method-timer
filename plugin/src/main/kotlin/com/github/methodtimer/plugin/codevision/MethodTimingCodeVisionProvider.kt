@@ -32,11 +32,12 @@ class MethodTimingCodeVisionProvider : CodeVisionProvider<Unit> {
         val project = editor.project ?: return CodeVisionState.READY_EMPTY
 
         val storage = MethodTimingStorage.getInstance(project)
-        val lastRunTimestamp = storage.state.lastRunTimestamp
 
         val lenses = ReadAction.compute<List<Pair<TextRange, CodeVisionEntry>>, Throwable> {
             val psiFile = com.intellij.psi.PsiDocumentManager.getInstance(project)
                 .getPsiFile(editor.document) as? PsiJavaFile ?: return@compute emptyList()
+
+            val lastRunTimestamp = storage.state.lastRunTimestamp
 
             val result = mutableListOf<Pair<TextRange, CodeVisionEntry>>()
             PsiTreeUtil.findChildrenOfType(psiFile, PsiMethod::class.java).forEach { method ->

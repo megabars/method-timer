@@ -1,7 +1,5 @@
 package com.github.methodtimer.agent;
 
-import com.google.gson.Gson;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -10,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,7 +17,6 @@ public class TimingResultWriter {
     private static final ConcurrentHashMap<String, Long> timings = new ConcurrentHashMap<>();
     // Кеш перенесён сюда из TimingAdvice: поля Advice недоступны из инлайненного байткода
     private static final ConcurrentHashMap<Method, String> fqnCache = new ConcurrentHashMap<>();
-    private static final Gson gson = new Gson();
     private static volatile String outputFilePath;
 
     public static void init(String filePath) {
@@ -31,7 +29,7 @@ public class TimingResultWriter {
                     Thread.sleep(2000);
                     flush();
                 } catch (InterruptedException e) {
-                    flush();
+                    // Не вызываем flush() — shutdown hook сделает это
                     return;
                 }
             }
@@ -78,13 +76,15 @@ public class TimingResultWriter {
             return;
         }
 
+        // Снимок для консистентной записи — исключает race condition с record()
+        Map<String, Long> snapshot = new HashMap<>(timings);
+
         Path path = Paths.get(outputFilePath);
         Path tmpPath = Paths.get(outputFilePath + ".tmp");
 
         try (BufferedWriter writer = Files.newBufferedWriter(tmpPath, StandardCharsets.UTF_8)) {
-            for (Map.Entry<String, Long> entry : timings.entrySet()) {
-                TimingEntry te = new TimingEntry(entry.getKey(), entry.getValue());
-                writer.write(gson.toJson(te));
+            for (Map.Entry<String, Long> entry : snapshot.entrySet()) {
+                writer.write(toJson(entry.getKey(), entry.getValue()));
                 writer.newLine();
             }
         } catch (IOException e) {
@@ -104,13 +104,19 @@ public class TimingResultWriter {
         }
     }
 
-    private static class TimingEntry {
-        final String fqn;
-        final long timeNs;
-
-        TimingEntry(String fqn, long timeNs) {
-            this.fqn = fqn;
-            this.timeNs = timeNs;
+    private static String toJson(String fqn, long timeNs) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"fqn\":\"");
+        // Экранируем спецсимволы JSON (в FQN маловероятны, но для надёжности)
+        for (int i = 0; i < fqn.length(); i++) {
+            char c = fqn.charAt(i);
+            switch (c) {
+                case '"': sb.append("\\\""); break;
+                case '\\': sb.append("\\\\"); break;
+                default: sb.append(c);
+            }
         }
+        sb.append("\",\"timeNs\":").append(timeNs).append('}');
+        return sb.toString();
     }
 }

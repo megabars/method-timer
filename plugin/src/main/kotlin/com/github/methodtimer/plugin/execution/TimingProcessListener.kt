@@ -39,7 +39,8 @@ class TimingProcessListener : ExecutionListener, Disposable {
     override fun processStarted(executorId: String, env: ExecutionEnvironment, handler: ProcessHandler) {
         val project = env.project
         val runProfileName = env.runProfile.name
-        val outputPath = TimingRunTracker.getInstance(project).getOutputPath(runProfileName) ?: return
+        // Забираем путь из очереди сразу — каждый запуск получает свой уникальный путь
+        val outputPath = TimingRunTracker.getInstance(project).consumeOutputPath(runProfileName) ?: return
 
         LOG.info("[MethodTimer] Starting periodic polling for: $runProfileName")
 
@@ -60,7 +61,6 @@ class TimingProcessListener : ExecutionListener, Disposable {
                 // Финальное чтение с удалением файла через scheduler (без блокировки пула IDE)
                 scheduler.schedule({
                     readAndUpdateTimings(project, outputPath, deleteFile = true)
-                    TimingRunTracker.getInstance(project).consumeOutputPath(runProfileName)
                 }, 1, TimeUnit.SECONDS)
             }
         })
