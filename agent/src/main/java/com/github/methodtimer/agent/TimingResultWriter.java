@@ -109,6 +109,9 @@ public class TimingResultWriter {
         }
     }
 
+    // КОНТРАКТ: порядок полей ("fqn" перед "timeNs") фиксирован — TimingResultsReader (плагин)
+    // парсит строку через regex и не зависит от порядка полей, но изменение формата
+    // должно синхронно обновляться в FQN_REGEX / TIME_NS_REGEX на стороне плагина.
     static String toJson(String fqn, long timeNs) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"fqn\":\"");

@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+
 val platformVersion: String by project
 val pluginVersion: String by project
 
@@ -22,6 +24,7 @@ dependencies {
         intellijIdeaCommunity(platformVersion)
         bundledPlugin("com.intellij.java")
         instrumentationTools()
+        testFramework(TestFrameworkType.JUnit5)
     }
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

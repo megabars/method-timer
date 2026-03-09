@@ -13,10 +13,10 @@ class MethodTimingStorage : PersistentStateComponent<MethodTimingStorage.State> 
 
     class State {
         var timings: MutableMap<String, Long> = ConcurrentHashMap()
-        var lastRunTimestamp: Long = 0L
+        @Volatile var lastRunTimestamp: Long = 0L
     }
 
-    private var myState = State()
+    @Volatile private var myState = State()
 
     override fun getState(): State = myState
 

@@ -37,8 +37,6 @@ class MethodTimingCodeVisionProvider : CodeVisionProvider<Unit> {
             val psiFile = com.intellij.psi.PsiDocumentManager.getInstance(project)
                 .getPsiFile(editor.document) as? PsiJavaFile ?: return@compute emptyList()
 
-            val lastRunTimestamp = storage.state.lastRunTimestamp
-
             val result = mutableListOf<Pair<TextRange, CodeVisionEntry>>()
             PsiTreeUtil.findChildrenOfType(psiFile, PsiMethod::class.java).forEach { method ->
                 val fqn = MethodSignatureResolver.resolveSignature(method) ?: return@forEach
@@ -50,7 +48,8 @@ class MethodTimingCodeVisionProvider : CodeVisionProvider<Unit> {
                 val entry = ClickableTextCodeVisionEntry(
                     "\u23F1 $formattedTime",
                     id,
-                    { event, sourceEditor -> handleClick(event, sourceEditor, fqn, nanos, lastRunTimestamp) },
+                    // lastRunTimestamp читается в момент клика, а не рендера — всегда актуальное значение
+                    { event, sourceEditor -> handleClick(event, sourceEditor, storage, fqn, nanos) },
                     null,
                     formattedTime,
                     ""
@@ -66,10 +65,11 @@ class MethodTimingCodeVisionProvider : CodeVisionProvider<Unit> {
     private fun handleClick(
         @Suppress("UNUSED_PARAMETER") event: MouseEvent?,
         editor: Editor,
+        storage: MethodTimingStorage,
         fqn: String,
-        nanos: Long,
-        lastRunTimestamp: Long
+        nanos: Long
     ) {
+        val lastRunTimestamp = storage.state.lastRunTimestamp
         val formattedTime = TimeFormatter.format(nanos)
         val dateStr = if (lastRunTimestamp > 0) {
             DATE_FORMATTER.format(Instant.ofEpochMilli(lastRunTimestamp).atZone(ZoneId.systemDefault()))

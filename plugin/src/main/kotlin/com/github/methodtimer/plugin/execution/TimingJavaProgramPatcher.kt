@@ -31,7 +31,8 @@ class TimingJavaProgramPatcher : JavaProgramPatcher() {
                 .notify(configuration.project)
             return
         }
-        val outputFile = FileUtil.createTempFile("method-timing-", ".jsonl", true)
+        // deleteOnExit=false — жизненным циклом файла управляет TimingRunTracker.dispose()
+        val outputFile = FileUtil.createTempFile("method-timing-", ".jsonl", false)
 
         javaParameters.vmParametersList.add("-javaagent:${agentJar.absolutePath}=${outputFile.absolutePath}")
 

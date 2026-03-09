@@ -21,6 +21,7 @@ import java.nio.file.Paths
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 class TimingProcessListener : ExecutionListener, Disposable {
 
@@ -44,8 +45,12 @@ class TimingProcessListener : ExecutionListener, Disposable {
 
         LOG.info("[MethodTimer] Starting periodic polling for: $runProfileName")
 
+        // Флаг завершения процесса — предотвращает параллельное выполнение polling и финального чтения
+        val terminated = AtomicBoolean(false)
+
         // Начальная задержка 5 секунд (дать JVM стартовать), затем каждые 3 секунды читаем файл и обновляем Code Vision
         val task: ScheduledFuture<*> = scheduler.scheduleAtFixedRate({
+            if (terminated.get()) return@scheduleAtFixedRate
             try {
                 readAndUpdateTimings(project, outputPath, deleteFile = false)
             } catch (e: Exception) {
@@ -56,6 +61,7 @@ class TimingProcessListener : ExecutionListener, Disposable {
         // Останавливаем polling когда процесс завершится
         handler.addProcessListener(object : ProcessAdapter() {
             override fun processTerminated(event: ProcessEvent) {
+                terminated.set(true)
                 task.cancel(false)
                 LOG.info("[MethodTimer] Process terminated: $runProfileName")
                 // Финальное чтение с удалением файла через scheduler (без блокировки пула IDE).
