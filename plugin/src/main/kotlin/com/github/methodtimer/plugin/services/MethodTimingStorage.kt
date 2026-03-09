@@ -33,13 +33,6 @@ class MethodTimingStorage : PersistentStateComponent<MethodTimingStorage.State> 
 
     fun getTimingForMethod(fqn: String): Long? = myState.timings[fqn]
 
-    fun getAllTimings(): Map<String, Long> = myState.timings.toMap()
-
-    fun clearTimings() {
-        myState.timings.clear()
-        myState.lastRunTimestamp = 0L
-    }
-
     companion object {
         fun getInstance(project: Project): MethodTimingStorage =
             project.getService(MethodTimingStorage::class.java)

@@ -44,7 +44,7 @@ class TimingProcessListener : ExecutionListener, Disposable {
 
         LOG.info("[MethodTimer] Starting periodic polling for: $runProfileName")
 
-        // Каждые 3 секунды читаем файл и обновляем Code Vision
+        // Начальная задержка 5 секунд (дать JVM стартовать), затем каждые 3 секунды читаем файл и обновляем Code Vision
         val task: ScheduledFuture<*> = scheduler.scheduleAtFixedRate({
             try {
                 readAndUpdateTimings(project, outputPath, deleteFile = false)

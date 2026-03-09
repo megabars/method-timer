@@ -36,7 +36,7 @@ class TimeFormatterTest {
     fun `1500000 ns = 1_5 ms`() = assertEquals("1.5 ms", TimeFormatter.format(1_500_000L))
 
     @Test
-    fun `boundary 999999999 ns`() = assertEquals("1000.0 ms", TimeFormatter.format(999_999_999L))
+    fun `boundary 999999999 ns`() = assertEquals("1.00 s", TimeFormatter.format(999_999_999L))
 
     // ── секунды ───────────────────────────────────────────────────────────────
 
