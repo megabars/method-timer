@@ -36,6 +36,14 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <h3>1.1.0</h3>
+        <ul>
+            <li>Fixed generic method signature matching (type erasure)</li>
+            <li>Fixed thread safety of timing storage after IDE restart</li>
+            <li>Fixed scheduler thread leak on plugin unload</li>
+            <li>Fixed potential PSI access without ReadAction</li>
+            <li>Removed duplicate Code Vision provider registration</li>
+        </ul>
         <h3>1.0.0</h3>
         <ul>
             <li>Initial release</li>
@@ -51,11 +59,10 @@
     <depends>com.intellij.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="Method Timer" displayType="BALLOON" isLogByDefault="true"/>
+
         <java.programPatcher
             implementation="com.github.methodtimer.plugin.execution.TimingJavaProgramPatcher"/>
-
-        <codeInsight.codeVisionProvider
-            implementation="com.github.methodtimer.plugin.codevision.MethodTimingCodeVisionProvider"/>
 
         <codeInsight.codeVisionProviderFactory
             implementation="com.github.methodtimer.plugin.codevision.MethodTimingCodeVisionProviderFactory"/>

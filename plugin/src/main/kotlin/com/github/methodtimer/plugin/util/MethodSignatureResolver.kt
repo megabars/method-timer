@@ -1,6 +1,7 @@
 package com.github.methodtimer.plugin.util
 
 import com.intellij.psi.PsiMethod
+import com.intellij.psi.util.TypeConversionUtil
 
 object MethodSignatureResolver {
 
@@ -8,7 +9,7 @@ object MethodSignatureResolver {
         val containingClass = method.containingClass ?: return null
         val className = containingClass.qualifiedName ?: return null
         val params = method.parameterList.parameters.joinToString(", ") { param ->
-            param.type.canonicalText
+            TypeConversionUtil.erasure(param.type).canonicalText
         }
         return "$className.${method.name}($params)"
     }

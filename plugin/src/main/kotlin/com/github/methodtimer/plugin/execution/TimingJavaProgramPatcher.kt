@@ -7,6 +7,8 @@ import com.intellij.execution.configurations.ModuleBasedConfiguration
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.runners.JavaProgramPatcher
 import com.intellij.ide.plugins.PluginManagerCore
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.util.io.FileUtil
@@ -19,6 +21,14 @@ class TimingJavaProgramPatcher : JavaProgramPatcher() {
         val agentJar = resolveAgentJar()
         if (agentJar == null) {
             LOG.warn("[MethodTimer] Agent JAR not found")
+            NotificationGroupManager.getInstance()
+                .getNotificationGroup("Method Timer")
+                .createNotification(
+                    "Method Timer: agent JAR not found",
+                    "Profiling is disabled for this run. Try reinstalling the plugin.",
+                    NotificationType.WARNING
+                )
+                .notify(configuration.project)
             return
         }
         val outputFile = FileUtil.createTempFile("method-timing-", ".jsonl", true)

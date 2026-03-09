@@ -3,6 +3,7 @@ package com.github.methodtimer.plugin.services
 import com.google.gson.JsonParser
 import com.intellij.openapi.diagnostic.Logger
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 
 object TimingResultsReader {
@@ -30,6 +31,8 @@ object TimingResultsReader {
                     }
                 }
             }
+        } catch (_: NoSuchFileException) {
+            // Файл мог быть удалён между проверкой exists() и чтением (атомарный move агента)
         } catch (e: Exception) {
             LOG.error("Failed to read timing results from $filePath", e)
         }

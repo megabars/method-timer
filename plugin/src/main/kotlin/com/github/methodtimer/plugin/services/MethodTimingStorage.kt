@@ -23,6 +23,8 @@ class MethodTimingStorage : PersistentStateComponent<MethodTimingStorage.State> 
 
     override fun loadState(state: State) {
         XmlSerializerUtil.copyBean(state, myState)
+        // XmlSerializer десериализует Map как LinkedHashMap — восстанавливаем потокобезопасность
+        myState.timings = ConcurrentHashMap(myState.timings)
     }
 
     fun updateTimings(newTimings: Map<String, Long>) {

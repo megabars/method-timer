@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TimingResultWriter {
 
     private static final ConcurrentHashMap<String, Long> timings = new ConcurrentHashMap<>();
+    // Кеш перенесён сюда из TimingAdvice: поля Advice недоступны из инлайненного байткода
+    private static final ConcurrentHashMap<Method, String> fqnCache = new ConcurrentHashMap<>();
     private static final Gson gson = new Gson();
     private static volatile String outputFilePath;
 
@@ -40,8 +43,34 @@ public class TimingResultWriter {
         Runtime.getRuntime().addShutdownHook(new Thread(TimingResultWriter::flush, "method-timer-shutdown"));
     }
 
-    public static void record(String fqn, long nanos) {
+    public static void record(Method method, long nanos) {
+        String fqn = fqnCache.get(method);
+        if (fqn == null) {
+            fqn = buildFqn(method);
+            fqnCache.put(method, fqn);
+        }
         timings.put(fqn, nanos);
+    }
+
+    private static String buildFqn(Method method) {
+        Class<?> declaringClass = method.getDeclaringClass();
+        String className = declaringClass.getCanonicalName();
+        if (className == null) {
+            className = declaringClass.getName().replace('$', '.');
+        }
+        Class<?>[] paramTypes = method.getParameterTypes();
+        StringBuilder sb = new StringBuilder();
+        sb.append(className).append('.').append(method.getName()).append('(');
+        for (int i = 0; i < paramTypes.length; i++) {
+            if (i > 0) sb.append(", ");
+            String paramName = paramTypes[i].getCanonicalName();
+            if (paramName == null) {
+                paramName = paramTypes[i].getName().replace('$', '.');
+            }
+            sb.append(paramName);
+        }
+        sb.append(')');
+        return sb.toString();
     }
 
     private static synchronized void flush() {

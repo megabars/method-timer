@@ -10,20 +10,30 @@ import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
-class TimingProcessListener : ExecutionListener {
+class TimingProcessListener : ExecutionListener, Disposable {
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor { r ->
         Thread(r, "method-timer-poller").apply { isDaemon = true }
+    }
+
+    init {
+        Disposer.register(ApplicationManager.getApplication(), this)
+    }
+
+    override fun dispose() {
+        scheduler.shutdownNow()
     }
 
     override fun processStarted(executorId: String, env: ExecutionEnvironment, handler: ProcessHandler) {
@@ -64,7 +74,7 @@ class TimingProcessListener : ExecutionListener {
         val results = TimingResultsReader.readResults(path)
         if (results.isEmpty()) return
 
-        LOG.info("[MethodTimer] Read ${results.size} timing entries")
+        LOG.debug("[MethodTimer] Read ${results.size} timing entries")
 
         val storage = MethodTimingStorage.getInstance(project)
         storage.updateTimings(results)
