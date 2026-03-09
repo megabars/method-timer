@@ -17,6 +17,8 @@ public class TimingResultWriter {
     private static final ConcurrentHashMap<String, Long> timings = new ConcurrentHashMap<>();
     // Кеш перенесён сюда из TimingAdvice: поля Advice недоступны из инлайненного байткода
     private static final ConcurrentHashMap<Method, String> fqnCache = new ConcurrentHashMap<>();
+    // Ограничение кеша — защита от неограниченного роста в долгоживущих процессах
+    private static final int FQN_CACHE_MAX_SIZE = 50_000;
     private static volatile String outputFilePath;
 
     public static void init(String filePath) {
@@ -45,12 +47,15 @@ public class TimingResultWriter {
         String fqn = fqnCache.get(method);
         if (fqn == null) {
             fqn = buildFqn(method);
-            fqnCache.put(method, fqn);
+            // Не кешируем при превышении лимита — защита от OOM в приложениях с динамической генерацией классов
+            if (fqnCache.size() < FQN_CACHE_MAX_SIZE) {
+                fqnCache.put(method, fqn);
+            }
         }
         timings.put(fqn, nanos);
     }
 
-    private static String buildFqn(Method method) {
+    static String buildFqn(Method method) {
         Class<?> declaringClass = method.getDeclaringClass();
         String className = declaringClass.getCanonicalName();
         if (className == null) {
@@ -104,16 +109,27 @@ public class TimingResultWriter {
         }
     }
 
-    private static String toJson(String fqn, long timeNs) {
+    static String toJson(String fqn, long timeNs) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"fqn\":\"");
-        // Экранируем спецсимволы JSON (в FQN маловероятны, но для надёжности)
+        // Экранируем все спецсимволы JSON согласно RFC 8259
         for (int i = 0; i < fqn.length(); i++) {
             char c = fqn.charAt(i);
             switch (c) {
-                case '"': sb.append("\\\""); break;
+                case '"':  sb.append("\\\""); break;
                 case '\\': sb.append("\\\\"); break;
-                default: sb.append(c);
+                case '\n': sb.append("\\n");  break;
+                case '\r': sb.append("\\r");  break;
+                case '\t': sb.append("\\t");  break;
+                case '\b': sb.append("\\b");  break;
+                case '\f': sb.append("\\f");  break;
+                default:
+                    if (c < 0x20) {
+                        // Прочие управляющие символы (U+0000..U+001F) — unicode escape
+                        sb.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        sb.append(c);
+                    }
             }
         }
         sb.append("\",\"timeNs\":").append(timeNs).append('}');

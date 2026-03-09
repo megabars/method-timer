@@ -58,10 +58,11 @@ class TimingProcessListener : ExecutionListener, Disposable {
             override fun processTerminated(event: ProcessEvent) {
                 task.cancel(false)
                 LOG.info("[MethodTimer] Process terminated: $runProfileName")
-                // Финальное чтение с удалением файла через scheduler (без блокировки пула IDE)
+                // Финальное чтение с удалением файла через scheduler (без блокировки пула IDE).
+                // Задержка 2с — буфер на случай медленного файлового flush на некоторых FS.
                 scheduler.schedule({
                     readAndUpdateTimings(project, outputPath, deleteFile = true)
-                }, 1, TimeUnit.SECONDS)
+                }, 2, TimeUnit.SECONDS)
             }
         })
     }
@@ -81,6 +82,9 @@ class TimingProcessListener : ExecutionListener, Disposable {
 
         if (deleteFile) {
             try { Files.deleteIfExists(path) } catch (_: Exception) {}
+            if (!project.isDisposed) {
+                TimingRunTracker.getInstance(project).releasePath(outputPath)
+            }
         }
 
         // Принудительно инвалидируем Code Vision
