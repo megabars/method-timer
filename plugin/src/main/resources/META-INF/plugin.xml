@@ -35,6 +35,11 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <h3>1.2.0</h3>
+        <ul>
+            <li>Fixed Code Vision popup appearing at wrong location on click</li>
+            <li>Excluded Spring CGLIB/Hibernate proxy classes from instrumentation</li>
+        </ul>
         <h3>1.1.0</h3>
         <ul>
             <li>Fixed generic method signature matching (type erasure)</li>

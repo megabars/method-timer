@@ -6,9 +6,9 @@ import com.github.methodtimer.plugin.services.TimingResultsReader
 import com.github.methodtimer.plugin.services.TimingRunTracker
 import com.intellij.codeInsight.codeVision.CodeVisionHost
 import com.intellij.execution.ExecutionListener
-import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
+import com.intellij.execution.process.ProcessListener
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -59,7 +59,7 @@ class TimingProcessListener : ExecutionListener, Disposable {
         }, 5, 3, TimeUnit.SECONDS)
 
         // Останавливаем polling когда процесс завершится
-        handler.addProcessListener(object : ProcessAdapter() {
+        handler.addProcessListener(object : ProcessListener {
             override fun processTerminated(event: ProcessEvent) {
                 terminated.set(true)
                 task.cancel(false)
