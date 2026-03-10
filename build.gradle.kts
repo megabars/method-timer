@@ -3,9 +3,11 @@ plugins {
     kotlin("jvm") version "1.9.25" apply false
 }
 
+val pluginVersion: String by project
+
 allprojects {
     group = "com.github.methodtimer"
-    version = "1.1.0"
+    version = pluginVersion
 
     repositories {
         mavenCentral()
