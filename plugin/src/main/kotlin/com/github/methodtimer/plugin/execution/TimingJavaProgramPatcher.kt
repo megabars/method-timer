@@ -13,6 +13,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.util.io.FileUtil
 import java.io.File
+import java.io.IOException
 
 class TimingJavaProgramPatcher : JavaProgramPatcher() {
 
@@ -32,7 +33,12 @@ class TimingJavaProgramPatcher : JavaProgramPatcher() {
             return
         }
         // deleteOnExit=false — жизненным циклом файла управляет TimingRunTracker.dispose()
-        val outputFile = FileUtil.createTempFile("method-timing-", ".jsonl", false)
+        val outputFile = try {
+            FileUtil.createTempFile("method-timing-", ".jsonl", false)
+        } catch (e: IOException) {
+            LOG.warn("[MethodTimer] Failed to create temp file for timing output", e)
+            return
+        }
 
         javaParameters.vmParametersList.add("-javaagent:${agentJar.absolutePath}=${outputFile.absolutePath}")
 

@@ -31,7 +31,7 @@ public class TimingResultWriter {
                     Thread.sleep(2000);
                     flush();
                 } catch (InterruptedException e) {
-                    // Не вызываем flush() — shutdown hook сделает это
+                    Thread.currentThread().interrupt();
                     return;
                 }
             }

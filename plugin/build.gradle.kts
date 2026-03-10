@@ -24,10 +24,12 @@ dependencies {
         intellijIdeaCommunity(platformVersion)
         bundledPlugin("com.intellij.java")
         instrumentationTools()
+        testFramework(TestFrameworkType.Platform)
         testFramework(TestFrameworkType.JUnit5)
     }
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly("junit:junit:4.13.2")
 }
 
 tasks.test {
