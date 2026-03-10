@@ -39,7 +39,10 @@ public class TimingAgent {
                         URL location = codeSource.getLocation();
                         if (location == null) return false;
                         String path = location.getPath();
-                        return !path.endsWith(".jar") && !path.endsWith(".jar!/");
+                        if (path.endsWith(".jar") || path.endsWith(".jar!/")) return false;
+                        // Исключаем CGLIB-прокси и другие сгенерированные классы (Spring, Hibernate, Mockito и т.д.)
+                        String name = typeDescription.getName();
+                        return !name.contains("$$");
                     }
                 })
                 .transform((builder, typeDescription, classLoader, module, protectionDomain) ->
