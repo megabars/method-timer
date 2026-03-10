@@ -63,7 +63,7 @@ class MethodTimingCodeVisionProvider : CodeVisionProvider<Unit> {
     }
 
     private fun handleClick(
-        @Suppress("UNUSED_PARAMETER") event: MouseEvent?,
+        event: MouseEvent?,
         editor: Editor,
         storage: MethodTimingStorage,
         fqn: String,
@@ -83,9 +83,12 @@ class MethodTimingCodeVisionProvider : CodeVisionProvider<Unit> {
             |Last run: $dateStr
         """.trimMargin()
 
-        JBPopupFactory.getInstance()
-            .createMessage(message)
-            .showInBestPositionFor(editor)
+        val popup = JBPopupFactory.getInstance().createMessage(message)
+        if (event != null) {
+            popup.showInScreenCoordinates(editor.contentComponent, event.locationOnScreen)
+        } else {
+            popup.showInBestPositionFor(editor)
+        }
     }
 
     companion object {
