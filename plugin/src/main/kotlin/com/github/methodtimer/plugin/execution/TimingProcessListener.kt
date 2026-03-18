@@ -84,7 +84,7 @@ class TimingProcessListener : ExecutionListener, Disposable {
         LOG.debug("[MethodTimer] Read ${results.size} timing entries")
 
         val storage = MethodTimingStorage.getInstance(project)
-        storage.updateTimings(results)
+        val changed = storage.updateTimings(results)
 
         if (deleteFile) {
             try { Files.deleteIfExists(path) } catch (_: Exception) {}
@@ -93,14 +93,16 @@ class TimingProcessListener : ExecutionListener, Disposable {
             }
         }
 
-        // Принудительно инвалидируем Code Vision
-        ApplicationManager.getApplication().invokeLater {
-            if (!project.isDisposed) {
-                val codeVisionHost = project.service<CodeVisionHost>()
-                codeVisionHost.invalidateProvider(
-                    CodeVisionHost.LensInvalidateSignal(null, listOf(MethodTimingCodeVisionProvider.ID))
-                )
-            }
+        // Инвалидируем Code Vision только если данные изменились
+        if (changed || deleteFile) {
+            ApplicationManager.getApplication().invokeLater({
+                if (!project.isDisposed) {
+                    val codeVisionHost = project.service<CodeVisionHost>()
+                    codeVisionHost.invalidateProvider(
+                        CodeVisionHost.LensInvalidateSignal(null, listOf(MethodTimingCodeVisionProvider.ID))
+                    )
+                }
+            }, com.intellij.openapi.application.ModalityState.nonModal())
         }
     }
 

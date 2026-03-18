@@ -8,16 +8,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Плагин "Method Timer" для IntelliJ IDEA — замеряет время выполнения Java-методов через Java Agent и отображает результаты как Code Vision линзы над объявлениями методов. Работает как с короткоживущими консольными приложениями, так и с долгоживущими (Spring Boot и т.д.).
 
-## Команды сборки
+## Команды сборки и тестирования
 
 ```bash
-./gradlew :agent:shadowJar       # Собрать fat JAR агента (agent/build/libs/agent-*-all.jar)
+./gradlew :agent:shadowJar        # Собрать fat JAR агента (agent/build/libs/agent-*-all.jar)
 ./gradlew :plugin:compileKotlin   # Скомпилировать только плагин
 ./gradlew :plugin:buildPlugin     # Полная сборка плагина с ZIP-дистрибутивом
 ./gradlew :plugin:runIde          # Запустить sandbox IntelliJ с установленным плагином
+
+./gradlew :agent:test             # Тесты агента (JUnit 5)
+./gradlew :plugin:test            # Тесты плагина (IntelliJ test framework + JUnit 5)
+./gradlew :plugin:verifyPlugin    # Проверить совместимость с 2024.3, 2025.1, 2025.2
+
+# Публикация на JetBrains Marketplace (требует JETBRAINS_MARKETPLACE_TOKEN)
+./gradlew :plugin:publishPlugin
 ```
 
-Сборка плагина автоматически запускает shadowJar агента через зависимость задачи `prepareSandbox`.
+Сборка плагина автоматически запускает shadowJar агента через зависимость задачи `prepareSandbox`. JAR агента размещается в `<plugin-name>/agent/` внутри sandbox.
 
 ZIP-дистрибутив: `plugin/build/distributions/plugin-<version>.zip`
 
@@ -39,6 +46,20 @@ JavaProgramPatcher (внедряет -javaagent:agent.jar=output.jsonl)
   → MethodTimingStorage (персистится в methodTimingData.xml)
   → CodeVisionHost.invalidateProvider() обновляет линзы
 ```
+
+### Версии и совместимость
+
+- Плагин: Kotlin JVM 21, `sinceBuild = "243"` (IntelliJ 2024.3+)
+- Агент: Java 8 source/target — запускается на JVM 8+
+- Тестируемые платформы: Community 2024.1, 2024.3, 2025.1, 2025.2
+
+### Формат JSONL-файла
+
+Агент пишет одну запись на строку: `{"fqn":"<escaped>","timeNs":<digits>}`
+
+Порядок полей **фиксирован** — плагин парсит regex-ом, а не JSON-парсером. Запись атомарна: агент пишет в `.tmp`, потом `Files.move(REPLACE_EXISTING, ATOMIC_MOVE)`.
+
+`MethodTimingStorage` хранит только **последнее** измерение на метод (Map<FQN, timeNs>). История не накапливается.
 
 ### Критический контракт сопоставления сигнатур
 

@@ -26,9 +26,14 @@ class MethodTimingStorage : PersistentStateComponent<MethodTimingStorage.State> 
         myState = state
     }
 
-    fun updateTimings(newTimings: Map<String, Long>) {
-        myState.timings.putAll(newTimings)
-        myState.lastRunTimestamp = System.currentTimeMillis()
+    /** Возвращает true если хотя бы одно значение изменилось. */
+    fun updateTimings(newTimings: Map<String, Long>): Boolean {
+        var changed = false
+        for ((fqn, ns) in newTimings) {
+            if (myState.timings.put(fqn, ns) != ns) changed = true
+        }
+        if (changed) myState.lastRunTimestamp = System.currentTimeMillis()
+        return changed
     }
 
     fun getTimingForMethod(fqn: String): Long? = myState.timings[fqn]
