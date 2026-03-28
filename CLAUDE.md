@@ -20,6 +20,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./gradlew :plugin:test            # Тесты плагина (IntelliJ test framework + JUnit 5)
 ./gradlew :plugin:verifyPlugin    # Проверить совместимость с 2024.3, 2025.1, 2025.2
 
+# Запуск одного теста (по имени класса или метода):
+./gradlew :plugin:test --tests "com.github.methodtimer.plugin.services.TimingRunTrackerTest"
+./gradlew :agent:test --tests "com.github.methodtimer.agent.TimingResultWriterTest"
+
 # Публикация на JetBrains Marketplace (требует JETBRAINS_MARKETPLACE_TOKEN)
 ./gradlew :plugin:publishPlugin
 ```
@@ -65,10 +69,12 @@ JavaProgramPatcher (внедряет -javaagent:agent.jar=output.jsonl)
 
 Агент и плагин должны генерировать идентичные FQN-строки методов. Формат: `com.example.ClassName.methodName(java.lang.String, int)`
 
-- **Сторона агента** (`TimingAdvice.java`): `Class.getCanonicalName() + "." + method.getName() + "(" + paramTypes + ")"`
-- **Сторона плагина** (`MethodSignatureResolver.kt`): `PsiMethod.containingClass.qualifiedName + "." + name + "(" + params.type.canonicalText + ")"`
+- **Сторона агента** (`TimingAdvice.java`): `Class.getCanonicalName() + "." + method.getName() + "(" + paramTypes + ")"` — параметры через `", "` (с пробелом), получены через `@Advice.Origin Method` (рефлексия, не строковый шаблон ByteBuddy)
+- **Сторона плагина** (`MethodSignatureResolver.kt`): `PsiMethod.containingClass.qualifiedName + "." + name + "(" + TypeConversionUtil.erasure(param.type).canonicalText + ")"` — `erasure()` обеспечивает совпадение дженериков (`List<String>` → `java.util.List`)
 
 Вложенные классы: агент использует `getCanonicalName()` (точки, а не `$`).
+
+**Важно**: если изменить разделитель параметров в агенте (например, перейти на `@Advice.Origin("#t.#m(#s)")`), нужно синхронно обновить `MethodSignatureResolver` — ByteBuddy использует `","` без пробела.
 
 ### Фильтрация классов агентом
 
@@ -93,6 +99,6 @@ JavaProgramPatcher (внедряет -javaagent:agent.jar=output.jsonl)
 
 - `JavaProgramPatcher` работает только для прямого запуска Java/JUnit, не для Gradle-делегированного выполнения
 - JAR агента использует Shadow plugin с перемещением ByteBuddy и Gson для избежания конфликтов classpath
-- `MethodTimingStorage` — light service (`@Service`) — НЕ регистрировать дополнительно в plugin.xml
-- `TimingRunTracker` связывает имена конфигураций запуска с путями к temp-файлам между patcher и listener
+- `MethodTimingStorage` и `TimingRunTracker` — оба project-level services (`@Service(Service.Level.PROJECT)`) — НЕ регистрировать дополнительно в plugin.xml
+- `TimingRunTracker` использует `ConcurrentLinkedDeque` на конфигурацию запуска — поддерживает параллельные запуски одной конфигурации в FIFO-порядке; `dispose()` удаляет все незачищенные temp-файлы
 - `AgentBuilder.RedefinitionStrategy.DISABLED` + `FallbackStrategy.Simple.ENABLED` — безопасный режим для совместимости с Spring Boot и другими фреймворками

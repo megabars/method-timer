@@ -9,11 +9,13 @@ import com.intellij.execution.runners.JavaProgramPatcher
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.util.io.FileUtil
 import java.io.File
 import java.io.IOException
+import java.util.zip.ZipFile
 
 class TimingJavaProgramPatcher : JavaProgramPatcher() {
 
@@ -58,6 +60,41 @@ class TimingJavaProgramPatcher : JavaProgramPatcher() {
             LOG.warn("[MethodTimer] Agent directory does not exist: $agentDir")
             return null
         }
-        return dir.listFiles()?.firstOrNull { it.name.endsWith("-all.jar") }
+        val jar = dir.listFiles()?.firstOrNull { it.name.endsWith("-all.jar") } ?: run {
+            LOG.warn("[MethodTimer] No *-all.jar found in: $agentDir")
+            return null
+        }
+        LOG.info("[MethodTimer] Found agent JAR: ${jar.absolutePath} (${jar.length()} bytes)")
+
+        if (isValidZip(jar)) return jar
+
+        // JAR невалиден — возможно, IntelliJ материализовал виртуальный путь в неполный temp-файл.
+        // Пробуем скопировать байты в стабильное место через стандартный Java I/O.
+        LOG.warn("[MethodTimer] Agent JAR at ${jar.absolutePath} is not a valid ZIP, copying to stable location")
+        return copyToStableLocation(jar)
+    }
+
+    private fun isValidZip(file: File): Boolean = try {
+        ZipFile(file).use { true }
+    } catch (_: Exception) {
+        false
+    }
+
+    private fun copyToStableLocation(source: File): File? {
+        return try {
+            val stableDir = File(PathManager.getSystemPath(), "method-timer")
+            stableDir.mkdirs()
+            val stable = File(stableDir, "agent.jar")
+            source.copyTo(stable, overwrite = true)
+            if (!isValidZip(stable)) {
+                LOG.warn("[MethodTimer] Copied agent JAR is still invalid: ${stable.absolutePath} (${stable.length()} bytes)")
+                return null
+            }
+            LOG.info("[MethodTimer] Agent JAR copied to stable location: ${stable.absolutePath}")
+            stable
+        } catch (e: Exception) {
+            LOG.warn("[MethodTimer] Failed to copy agent JAR to stable location", e)
+            null
+        }
     }
 }
